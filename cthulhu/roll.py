@@ -4,6 +4,9 @@ import random
 import re
 import logging
 
+class result:
+    fumble, fail, normal, hard, extreme, critical = range(6)
+
 def skillRoll(penalty=0, bonus=0):
     """
         This function will perform the roll for a skill check, which uses a
@@ -41,7 +44,7 @@ def skillRoll(penalty=0, bonus=0):
     logging.debug("\tSkill roll: Final roll is {}".format(myroll))
     return (myroll)
 
-def roll(die):
+def roll(die, max=False):
     """
         This will parse and roll a die roll string such as 1d6, 3d6*5, 1d8+1d4, etc.
         The result of the roll is returned.
@@ -56,14 +59,17 @@ def roll(die):
     splitDie = re.compile(r"(\W)")
     total = 0
     operator = '+'
-    logging.debug("Rolling a {}".format(die))
+    logging.debug("\tRolling a {}".format(die))
 
-    for dice in splitDie.split(die):
+    for dice in splitDie.split(str(die)):
         rolled = 0
 
         if 'd' in dice:
             # we have a dice roll
             (numTimes, numSides) = dieSplit.split(dice)
+            if max is True:
+                # just take the number specified in numSides for the max value
+                numTimes = -1
         elif dice in [ '+', '-', '*']:
             # we have an operator
             numTimes = 0
@@ -83,7 +89,8 @@ def roll(die):
                 logging.debug('\tRolled a {}, total is now {}'.format(tempRoll, rolled))
         elif numTimes == -1:
             # we have just a number
-            rolled = numSides
+            logging.debug('\tTaking value or max value {}'.format(numSides))
+            rolled = int(numSides)
 
         if operator == '-':
             total = total - rolled

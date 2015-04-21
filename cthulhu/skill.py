@@ -1,10 +1,7 @@
 #!/usr/bin/env python
 
 import logging
-from cthulhu.roll import skillRoll
-
-class result:
-    fumble, fail, normal, hard, extreme, critical = range(6)
+from cthulhu.roll import skillRoll, result
 
 class skill(object):
     def __init__(self, name, value):

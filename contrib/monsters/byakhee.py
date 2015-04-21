@@ -28,6 +28,7 @@ byakhee.build = 2
 byakhee.mp = 10
 byakhee.sanLoss = '1/1d6'
 byakhee.armor = 2
+byakhee.numAttacks = 2
 
 byakhee.setSkill('Listen', 50)
 byakhee.setSkill('Spot Hidden', 55)
@@ -37,5 +38,5 @@ byakhee.addWeapon('Fighting', '1d6+1d6', 'Fighting')
 
 myjson = byakhee.jsondump()
 newMonster = json_import(myjson)
-print byakhee
+print myjson
 

@@ -4,7 +4,8 @@ import logging
 import jsonpickle
 
 from cthulhu.skill import skill
-from cthulhu.weapon import weapon
+from cthulhu.weapon import weapon, firearm
+from cthulhu.roll import result
 
 class being(object):
     def __init__(self, name, HP=0, era = 'Classic'):
@@ -19,7 +20,10 @@ class being(object):
         self.mp = 0
         self.numAttacks = 1
         self.armor = 0
+        self.currentWeapon = None
 
+        self.status = dict()
+        self.status['fightback'] = True
         self.characteristics = dict()
         self.skills = dict()
         self.weapons = dict()
@@ -30,8 +34,11 @@ class being(object):
     def setSkill(self, skillName, value):
         self.skills[skillName] = skill(skillName, value)
 
-    def addWeapon(self, weaponName, skillName, damage, mal=100):
-        self.weapons[weaponName] = weapon(weaponName, skillName, damage, mal)
+    def addWeapon(self, weaponName, skillName, damage, weaponType='non-impaling', db=False, mal=101, ammo=0, numAttacks=1):
+        if weaponType != 'firearm':
+            self.weapons[weaponName] = weapon(weaponName, skillName, damage, weaponType=weaponType,  db=db, mal=mal)
+        else:
+            self.weapons[weaponName] = firearm(weaponName, skillName, damage, weaponType=weaponType,  db=db, mal=mal, ammo=ammo, numAttacks=numAttacks)
 
     def setDodge(self, value=0):
         try:
@@ -39,14 +46,64 @@ class being(object):
         except:
             log.error("ERROR: Unable to set Dodge.")
 
+    def outNumbered(self):
+        """ returns True if they have already responded """
+        try:
+            if self.status['combat_response'] > self.numAttacks:
+                return True
+        except KeyError:
+            self.status['combat_response'] = 0
+            return False
+
+        return False
+
     def jsondump(self):
         return jsonpickle.encode(self)
+
+    def initiative_value(self):
+        """ Return the initiative value for this character based on their current weapon. """
+        if self.currentWeapon is not None and self.currentWeapon.weaponType == 'firearm':
+            init_value = self.characteristics['DEX'].value + 50
+        else:
+            init_value = self.characteristics['DEX'].value
+
+        logging.debug("Combat: {} init value is {}".format(self.name, init_value))
+
+        return init_value
+
+    def setCurrentWeapon(self):
+        """ Ask the user what their current weapon should be. """
+        chosen = False
+        wlist = list(self.weapons)
+        if len(wlist) == 1:
+            weapon = 0
+            chosen = True
+
+        while chosen is False:
+
+            for w in wlist:
+                print '{}. {} {}'.format(wlist.index(w)+1, w, self.weapons[w].damage)
+            weapon = raw_input('\n{} must choose their weapon: '.format(self.name))
+
+            try:
+                weapon = int(weapon)-1
+                if 0 <= weapon <= len(wlist)-1:
+                    chosen = True
+            except:
+                pass
+
+        self.currentWeapon = self.weapons[wlist[weapon]]
 
 class character(being):
     def __init__(self, name=''):
         being.__init__(self, name)
         for characteristic in ['STR', 'DEX', 'APP', 'CON', 'POW', 'INT', 'SIZ', 'EDU']:
             self.setCharacteristic(characteristic, 0)
+
+        # only characters should check for major wounds. Is this true? Need to verify.
+        self.majorWound = 0
+
+        self.addWeapon('Unarmed',  '1d3', 'Fighting (Brawl)', db=True)  # ADD DAMAGE BONUS
 
     def setSecondary(self):
         self.setHP()
@@ -112,6 +169,15 @@ class character(being):
         except:
             logging.error('ERROR: Need POW before we can set MP.')
 
+    def checkMajorWound(self, damage):
+        # check for major wound
+        if self.HP > 0 and damage >= (self.maxHP / 2):
+            logging.info('DAMAGE: {} suffered a major wound.'.format(self.name))
+            # make a CON check
+            if self.characteristics['CON'].check() < result.normal:
+                logging.info('DAMAGE: {} failed their CON check - falling unconscious and will die.'.format(self.name))
+                self.HP = 0
+
 
     def __str__(self):
         outstr = "Name: {}\n".format(self.name)
@@ -141,6 +207,7 @@ class monster(being):
             self.setCharacteristic(characteristic, 0)
 
         self.sanLoss = '0/0'
+        self.majorWound = 0
 
     def __str__(self):
         outstr = "Name: {}\n".format(self.name)

@@ -21,11 +21,15 @@ newChar.luck = roll('2d6+6*5')
 newChar.setSecondary()
 
 newChar.setSkill('Spot Hidden', 70)
-newChar.setSkill('Fighting (Shotgun)', 55)
+newChar.setSkill('Fighting (Brawl)', 55)
+newChar.setSkill('Firearms (handgun)', 55)
 newChar.setSkill('Sneak', 40)
 newChar.setSkill('Listen', 55)
 newChar.setSkill('Sleight of Hand', 25)
+newChar.addWeapon('Unarmed', '1d3', 'Fighting (Brawl)', 'non-impaling', db=True)
+#newChar.addWeapon('Machete', '1d8', 'Fighting (Brawl)', 'penetrating', db=True)
+newChar.addWeapon('.38 Automatic', '1d10', 'Firearms (handgun)', 'firearm', db=False, mal=99, ammo=8, numAttacks=3)
 
 myjson = newChar.jsondump()
 jsonChar = json_import(myjson)
-print newChar
+print myjson
